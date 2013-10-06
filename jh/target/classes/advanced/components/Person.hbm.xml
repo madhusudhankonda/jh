@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.madhusudhan.jh.advanced.components">
+  <class name="Person" table="PERSON">
+    <id  name="id" column="PERSON_ID">
+      <generator class="native"/>
+    </id>
+    <property name="firstName" column="FIRST_NAME" />
+    <property name="lastName" column="LAST_NAME"/>
+    <property name="nickName" column="NICK_NAME"/>
+    <component name="phoneNumber" class="PhoneNumber">
+        <property name="areaCode" column="AREA_CODE"/>
+        <property name="phoneNumber" column="PHONE_NUMBER"/>
+        <property name="name" column="NAME"/>
+    </component>
+  </class>
+</hibernate-mapping>

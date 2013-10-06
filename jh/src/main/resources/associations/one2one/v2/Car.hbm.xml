@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="com.madhusudhan.jh.associations.one2one">
+  <class name="Car" table="CAR_V2">
+    <id name="id" column="CAR_ID" >
+      <generator class="assigned"/>
+    </id>
+    <property name="name" column="NAME" />
+    <property  name="color" column="COLOR"/>
+    <!-- the unique="true" makes this many-to-one relationship as one-to-one -->
+    <many-to-one name="engine" class="Engine" column="engine_id" cascade="all" unique="true"/>
+  </class>
+</hibernate-mapping>

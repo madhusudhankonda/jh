@@ -1,0 +1,231 @@
+package com.madhusudhan.jh.basics;
+
+import com.madhusudhan.jh.domain.Movie;
+
+public class MoviePersistor {
+
+    public void perist(Movie movie) {
+		// persisting mechanism goes here..
+	}
+	
+	public void fetch(String title) {
+		// fetching a movie by title mechanism goes here..
+	}
+}
+====
+package com.madhusudhan.jh.basics;
+
+import com.madhusudhan.jh.domain.Movie;
+
+public class MoviePersistorTest {
+	MoviePersistor moviePersistor = new MoviePersistor();
+
+	private void test() {
+		Movie movie = new Movie();
+
+		movie.setId(1);
+		movie.setTitle("Jaws");
+		movie.setDirector("Steven Spielberg");
+		movie.setSynopsis("Story of a gigantic great white shark!");
+
+		moviePersistor.perist(movie);
+		
+		
+	}
+
+	public static void main(String[] args) {
+
+	}
+}
+
+package com.madhusudhan.jh.basics;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Random;
+
+public class VanillaMovieManager {
+
+	private Connection connection = null;
+	private static Random r = null;
+
+	private String url = "jdbc:derby:memory:JH;create=true";
+
+	private String driverClass = "org.apache.derby.jdbc.EmbeddedDriver";
+
+	private String tableSql = "create table MOVIES (ID integer not null, TITLE varchar(255), DIRECTOR varchar(255), SYNOPSIS varchar(255), primary key (ID))";
+
+	private String insertSql = "INSERT INTO MOVIES VALUES (?,?,?,?)";
+	
+	public VanillaMovieManager() {
+		r = new Random();
+
+		// Create a connection
+		createConnection();
+
+		// Create a database
+
+		createTable();
+	}
+
+	private void createConnection() {
+		try {
+			Class.forName(driverClass).newInstance();
+			connection = DriverManager.getConnection(url, "", "");
+		} catch (Exception ex) {
+			System.err.println("Exception while creating a connection:"
+					+ ex.getMessage());
+		}
+
+		System.out.println("Connection created successfully");
+	}
+
+	private Connection getConnection() {
+
+		if (connection == null)
+			createConnection();
+
+		return connection;
+	}
+
+	private void createTable() {
+		try {
+			Statement st = getConnection().createStatement();
+			st.execute(tableSql);
+			System.out.println("Table created successfully");
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void persistMovieAndQueryForIt() {
+		try {
+			PreparedStatement pst = getConnection().prepareStatement(insertSql);
+			pst.setInt(1, r.nextInt(1000));
+			pst.setString(2, "Top Gun");
+			pst.setString(3, "Action Film");
+			pst.setString(4, "Tony Scott");
+			
+			pst.execute();
+			System.out.println("Movie persisted successfully!");
+			
+			//Now querying the persisted movie
+			System.out.println("Querying the movie..");
+			Statement st = getConnection().createStatement();
+			ResultSet rs = st.executeQuery("SELECT * FROM MOVIES");
+			while (rs.next()) {
+				System.out
+						.println("Movie Found: " + rs.getInt("ID") + ", Title:" + rs.getString("TITLE"));
+			}
+
+		} catch (SQLException ex) {
+			System.err.println(ex.getMessage());
+			ex.printStackTrace();
+		}
+	}
+
+	public void setConnection(Connection connection) {
+		this.connection = connection;
+	}
+
+	public static void main(String[] args) {
+		VanillaMovieManager movieManager = new VanillaMovieManager();
+
+		movieManager.persistMovieAndQueryForIt();
+	}
+}
+
+package com.madhusudhan.jh.basics;
+
+import java.util.List;
+
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.service.ServiceRegistry;
+import org.hibernate.service.ServiceRegistryBuilder;
+
+import com.madhusudhan.jh.domain.Movie;
+
+public class BasicMovieManager {
+
+    private SessionFactory sessionFactory = null;
+
+	public BasicMovieManager() {
+//		init4x();
+		init3x();
+	}
+	
+	private void init4x(){
+		Configuration config = new Configuration().configure();
+
+		ServiceRegistry serviceRegistry = new ServiceRegistryBuilder().applySettings(
+				config.getProperties()).buildServiceRegistry();
+
+		sessionFactory = config.buildSessionFactory(serviceRegistry);
+
+	}
+
+	private void init3x(){
+		sessionFactory = new Configuration().configure().buildSessionFactory();
+	}
+	
+	private void persistMovie() {
+		Movie movie = new Movie();
+
+		movie.setId(1);
+		movie.setDirector("Steven Speilberg");
+		movie.setTitle("Jaws");
+		movie.setSynopsis("A tale of a white shark!");
+		
+		Session session = sessionFactory.getCurrentSession();
+		
+		session.beginTransaction();
+		
+		session.save(movie);
+		
+		session.getTransaction().commit();
+	}
+
+	private void findMovie(int i) {
+		
+		Session session = sessionFactory.getCurrentSession();
+		
+		session.beginTransaction();
+		
+		Movie movie = (Movie)session.load(Movie.class, i);
+		
+		System.out.println("Movie:"+movie);
+		
+		session.getTransaction().commit();
+		
+	}
+	
+	private void findAll() {
+		
+		Session session = sessionFactory.getCurrentSession();
+		
+		session.beginTransaction();
+		
+		List<Movie> movies = session.createQuery("from Movie").list();
+		
+		session.getTransaction().commit();
+
+		System.out.println("All Movies:"+movies);
+		
+	}
+
+	public static void main(String[] args) {
+		BasicMovieManager movieManager = new BasicMovieManager();
+
+		movieManager.persistMovie();
+		
+//		movieManager.findMovie(1);
+		
+		movieManager.findAll();
+	}
+}

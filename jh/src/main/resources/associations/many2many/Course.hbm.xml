@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.madhusudhan.jh.associations.many2many">
+  <class name="Course" table="COURSE">
+    <id name="id" column="COURSE_ID" >
+      <generator class="native"/>
+    </id>
+    <property name="title" column="TITLE" />
+    <set name="students" table="STUDENT_COURSE" inverse="false" lazy="false" cascade="all">
+        <key column="COURSE_ID" />
+        <many-to-many column="STUDENT_ID" class="Student"/>
+    </set>
+  </class>
+</hibernate-mapping>

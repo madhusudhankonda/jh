@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.madhusudhan.jh.advanced.inheritance.s2">
+  <class name="Employee" table="INHERITANCE_S2_EMPLOYEE">
+    <id  name="id" column="EMPLOYEE_ID">
+      <generator class="native"/>
+    </id>
+    <property name="name" column="NAME" />
+    
+    <joined-subclass name="Executive" table="INHERITANCE_S2_EXECUTIVE">
+        <key column="EMPLOYEE_ID"/>
+        <property name="role" column="ROLE"/>
+    </joined-subclass>
+    
+  </class>
+</hibernate-mapping>

@@ -1,0 +1,300 @@
+== Fundamentals
+
+=== Introduction
+
+We have walked through a basic example of persisting Movie objects using Hibernate framework in the last chapter. We skipped through details as the aim was to get a taster of Hibernate without having to worry about the ingredients. Now is the time to understand the fundamentals of the framework to cement our foundations. This chapter deals with such fundamentals. 
+
+But before we go into Hibernate details, one thing we should atleast understand - the core problem of Object/Relational model mismatch.
+
+=== Object/Relational Mismatch
+
+In an ORM world, no discussion will be complete without grasping the Object/Relational paradigm mismatch. Understanding this paradigm will provide a decent background about inception and existence of ORM tools.
+
+The Object world is designed to solve specific business problems - for example, an application that would book a hotel reservation or transfer money from bank accounts, search on an ecommerce site for your favourite book etc. For these applications to solve the business problems, solutions are designed with a domain model in mind. Domain model defines the objects designed in solving the business problem. However, these domain objects are expected to be stored and retrieved from a durable storage such as a Database.
+
+Most of the real world applications cannot exist without some form of persistence. We will be mad if our banks say that they lost our money because they haven't stored our salary in a durable storage, don't we? Of all the choices available, relational database persistence is the industry standard of durable storage. Relational databases store the data in two dimensional format - rows and columns. The data relationships are expressed in the form of foreign keys.
+
+The problem arises when we start thinking of storing the domain objects in to the database. The objects in our application are not in a row-column format. So, unfortunately they can't be stored as is.
+
+There are few fundamental differences between the object and relational schemas. 
+
+==== Inheritance Mismatch
+
+The major feature that object world supports and relational shchemas does not support is inheritance. As we all know, the bread and buter of any Object Oriented language is inheritance, Java in particular. Unfortunately the relational schema does not know anything about inheritance. We know how important inheritance is to a Java programmer, without which designing the real-world problems would have been a bit messy. There are few approaches in solving this problem, employing various class-to-table stragies which we will see in coming chapters.
+
+==== Identity Mismatch
+
+The Objects in a Java application, for example, have both identity and equality. That is, if two objects represent the same memory location, they are identical while if they consists same values they are equal. We use +==+ for identity checking while +equals+ methods for equality.
+
+Whereas in a relational schema, the rows are identified with their values in the columns. There is no identity and equality concepts in relational model. The dat is only identified by the row values. This is the first mismatch. 
+
+In order to overcome this, normally the database tables may contain primary keys. These row identifiers are represnted as one of the object properties in the object model. 
+
+==== Identity Mismatch
+Lastly, associations are another key feature of any Object Oriented Programming language. Examples like a shopping basket is a collection of items, a car has a specific engine type, each trade has an instrument etc are all expressed as some form of associations. 
+
+Good thing is that these associations are supported by relational databases to some extent atleast. The foreign-key referring to a primary key of another table is the way of expressing an association in relational schema. However, object models exhibits not just one but three types of relationships: one-to-one, one-to-many and many-to-many. Converting these relationships to foreignkey-primarykey association is challenging but not impossible.
+
+I would strongly recommend to read a book on the subject of Object Relational mistmatch - there's plethora of material out there.
+
+The birth of ORM tools was not accidental - they were born out of necessity. Bridging the gap between the object and relational models posed numerous challenges let alone laborious. ORM tools such as Hibernate came into existence to automate the object-relational persistence strategies.
+
+=== Hibernate Main Parts
+
+If we look from a high ground, there are three important pieces that exists across all Hibernate applications. These are:
+
+# Persistent classes
+# Configuration & Mapping and
+# Accessing the Data
+
+Our domain model is nothing but the objects that requires persistence. These are modelled as persistent classes (or entities) in our application. What objects are to be stored and where they should be peristed is what the configuration tells us. Lastly, we use the Hibernate's API to fetch, save, delete and update the data.
+
+Let's see these moving parts in detail.
+
+=== Persistent Classes
+
+The fundamental requirment of a business application is to have the data living longer than an application that created it. For instance, a Movie object modelled to represent a movie can be accessed even if the application that created might have ceased to exist. We will be mad at NetFlix or LoveFilm if they can't show us Jurrasic Park or Jaws in our search!
+
+This requirement can be fulfilled by creating domain objects (POJOs) and allowing Hibernate to persist them in a durable storage. Creating the POJOs for persistence is easy.
+
+Let us consider a Trading Application which persists and queries the Trades from our backend database. Each Trade is defined as a Trade POJO, the basic defintion is shown below:
+
+[source, java]
+----
+public class Trade {
+    private long tradeId = -1;
+    private double quantity = 0;
+    private String security = null;
+	//Direction is an Enum 
+    private DIRECTION tradeDirection = DIRECTION.BUY;
+  	// getters and setters..
+    ....
+}
+----
+
+The above +Trade+ class holds the required information about a specific Trade. Instance of this Trade will be persisted in the database representing a unique row (assuming the tradeId is generated uniquely by our application) in the +TRADES+ table. 
+
+There is nothing special about these persistence classes from Hibernate's perspective. They are straight forward POJOs that Hibernate understands. 
+
+The only bit that we may have to discuss is the +id+ of the object. In the above +Trade+ class, the tradeId represents a unique +Trade+ and so is equivalent +TRADE_ID+ in the database table. We are going to learn about identifiers and their generation in the coming sections.
+
+Once we have defined our persistent classes, the next bit is to work on the configuration and mapping topic.
+
+=== Configuration
+
+In order to connect to a database, the Hibernate framework needs to know few bits of information such as the database url, credentials, dialects etc. During the runtime of our application, this configuration is read by the framework to establish a connection to the database.
+
+The cofiguration of the Hibernate is usually a one-off process. 
+
+There are couple ways of configuring the Hibernate. Ideally the configuration is loaded from either a properties file or a xml file. The convention is to provide our configuration with a default files names such as +hibernate.properties+ or +hibernate.cfg.xml+ file. However, the names of the files can be changed - we will see this in few minutes in one of our examples. 
+
+==== Properties File
+
+The connection properties are provided as name-value pairs in hibernate.properties file as shown below:
+[source, test]
+----
+hibernate.connection.driver_class = org.apache.derby.jdbc.EmbeddedDriver
+hibernate.connection.url = jdbc:derby:memory:JH;create=true
+hibernate.connection.username = myuser
+hibernate.connection.password = mypassword
+hibernate.dialect = org.hibernate.dialect.DerbyDialect
+----
+
+The above properties points to a Java Derby database. We need to change the appropriate properties such as driver_class, url and others for other databases. For example, the following snippet shows the connection details for MySql:
+[source, test]
+----
+hibernate.connection.driver_class = *com.mysql.jdbc.Driver*
+hibernate.connection.url = *jdbc:mysql://localhost:3306/JH*
+hibernate.dialect = *org.hibernate.dialect.MySQL5Dialect*
+....
+----
+As highlighted above, the appropriated properties for MySql database such as the driver and url are set. Do make sure the vendor driver classes are available in your classpath of the application though. We can add them as dependencies in the pom.xml file, as you can find in the associated sourcecode that comes with this book.
+
+==== Xml File
+
+The alternative to using a properties file is declaring the meta data in a Xml file. This is shown below:
+[source, xml]
+----
+<?xml version="1.0" encoding="utf-8"?> 
+<!DOCTYPE hibernate-configuration SYSTEM "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+  <session-factory>
+   <property name="connection.url">jdbc:derby:memory:JH;create=true</property>
+   <property name="connection.driver_class">org.apache.derby.jdbc.EmbeddedDriver</property>
+   <property name="connection.username"></property>
+   <property name="dialect">org.hibernate.dialect.DerbyDialect</property>
+  </session-factory>
+</hibernate-configuration>
+----
+
+As you may have noticed, the properties are used to create a +SessionFactory+ object and hence declared under the +session-factory+ tag. Also, the +hibernate.*+ prefix is dropped when compared to the +hiberante.properties+ file.
+
+==== Configuration Properties
+
+Now we know how to wire in properties to a Hiernate runtime, let's see what other properties that we can use. The following table provides some important properties that you can configure:
+//TABLE
+hibernate.show_sql true/false If true, all the SQL statements are printed out.
+hibernate.jdbc.fetch_size >=0 to set the JDBC fetch size
+hibernate.jdbc.batch_size 5 and 30 Used to bacth the statements
+hibernate.hbm2ddl.auto update/[TODO] recreate the schema during startup
+hibernate.connection.pool_size >=1
+
+Now that we have been given a choice of configurations  (both properties file and Xml file), the immediate question that might come is which one to use. 
+There is no hard and fast rules, you can use both of them equally. Infact, Hibernate doesn't complain even if we have both of them available to the application. It simply ignores the properties file by overriding 
+
+==== Programmatic Configuration
+
+Both modes discussed above (properties or xml file) is declarative. However, should we have a requirement of programmatic configuration, Hibernate can fullfill it. In this case, you can use the appropriate classes to be instantiated with the Configuration class. This is shown in the following snippet:
+
+[source,java]
+----
+TODO:
+Configuration cfg = new Configuration()
+    .setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect")
+    .setProperty("hibernate.connection.url", "jdbc:derby:memory:JH;create=true")
+    .setProperty("hibernate.order_updates", "true");
+----
+
+Alternatively, you can pass the parameters as standard VM arguments as shown below:
+[source,java]
+----
+-Dhibernate.connection.url=jdbc:derby:memory:JH;create=true -Dhibernate.username=mk
+----
+
+Ok, now we got enough information about talking to the database, the next thing we should think about is to how and what objects will be persited by our application? Also, how is the object field mapped to a column and who controls what fields to be persisted?
+
+This is where Hibernate comes into play again! By reading mapping xml files, Hibernate will do the transformation of object data to a row-column relational equivalent.
+
+=== Mapping
+
+Mapping declare meta data that Hibernate digests to produce a object-to-relational data tranformational plan. Hibernate allows us to use simple Xml files to declare our meta-data mapping. We can also Annotations or programmatic declarations to do so. 
+
+==== Using Xml Mapping Files
+
+Each domain POJO will be declared using the meta data in a xml file with an extension of +.hbm.xml+. This file should be made available in the classpath so Hibernate bootstaps the mapping definitions.
+
+For example, the Trade object mapping should be defined in +Trade.hbm.xml+ file and Movie in +Movie.hbm.xml+ etc. It's not mandatory to declare one mapping file for one object, we can define the entire model in one single mapping file. However, it may be fine for a simple mode but as soon as your domain model gets complicated, so do the single mapping file.
+
+My personal preference is to use a seperate mapping file for each domain object that requires to be persisted.
+
+So, the Trade.hbm.xml file is shown below:
+
+[source, xml]
+----
+<hibernate-mapping>
+    <*class name="com.madhusudhan.jh.domain.Trade" table="TRADES"*>
+        <id name="tradeId" column="TRADE_ID">
+            <generator class="assigned"/>
+        </id>
+        <property name="quantity" column="QUANTITY"/>
+        <property name="security" column="SECURITY"/>
+    </class>
+</hibernate-mapping>
+----
+
+There are few things that we should take away from this file before we move on. The class vs table mapping is done in a +class+ tag as highlighted in the above snippet. The declaration simply says that our +Trade+ object will be persisted to +TRADES+ table. Apart from mapping the class to the table, we need to tell the Hibernate which properties should be saved. 
+
+The first of the property is the id (or primary key) of the object. The +TradeId+ is mapped to the primary key of the table +TRADE_ID+ using the +id+ tag. The name of the +id+ tag correspond to the variable +tradeId+ we have defined on the +Trade+ class. Hibernate calls the +getTradeId+ and +setTradeId+ accordingly to set or get the +TRADE_ID+ variable.
+
+What and which fields of Trade will be persisted is defined by the property tag. Going with the above example, the +quantity+ field on the +Trade+ object will be stored in +QUANTIY+ column as defined by the column tag. Similarly, the +security+ value is mapped to +SECURITY+ column.
+
+If the name of the column matches to the variable of the object, we can omit the declaration of the column property. We can modify the above example and omit the column tags for quantiy and security as the variable names match to the column names:
+
+In the above snippet, we didn't mention the types of our attributes in the mapping file. How does Hibernate knows that quantity is double type or security is a String type? Well, ideally we should declare the types too, as shown below:
+
+[source, xml]
+----
+<hibernate-mapping>
+    <class name="com.madhusudhan.jh.domain.Trade" table="TRADES">
+		..
+        <*property name="quantity"*/>
+        <*property name="security"*/>
+    </class>
+</hibernate-mapping>
+----
+
+
+In the above snippet, we didn't mention the types of our attributes. How does Hibernate knows that quantity is double type or security is a String type? Well, ideally we should declare the types too, using the +type+ tag, as shown below:
+
+[source, xml]
+----
+<hibernate-mapping>
+    <class name="com.madhusudhan.jh.domain.Trade" table="TRADES">
+		..
+        <property name="quantity" *type="double"*/>
+        <property name="security" *type="string"*/>
+    </class>
+</hibernate-mapping>
+----
+We can omit these types letting Hibernate work out the variable types by using Java reflection or we can explicity declare them. 
+
+My personal preference is to declare them explicity so the startup time will be considerably minimal as Hibernate will not waste any time finding out types by using Java Reflection.
+
+While the mapping example shown above is the simplest one, it can consists of associations, relationships, queries and other hibernate elements. We will  revisit this topic again in coming chapters.
+
+==== Wiring the Mapping files
+
+So, now we have two set of files - hibernate.cfg.xml (or hibernate.properties) file and Trade.hbm.xml (our domain mapping file). 
+
+We need to include the mapping file in the configuration file so Hibernate can pick up the mappings during it's bootstrap along with usual database configuration.
+
+The following snippet shows this:
+
+[source, xml]
+----
+<hibernate-configuration>
+  <session-factory>
+   ....
+   *<mapping resource="Movie.hbm.xml" />*
+   *<mapping resource="Trade.hbm.xml" />*
+  </session-factory>
+ </hibernate-configuration>
+----
+
+[TODO - check] Instead of declaring each one of them as a resource, you can declare them all of them like a list:
+
+[source, xml]
+----
+<hibernate-configuration>
+  <session-factory>
+   ....
+   <mapping>
+     <list>Movie.hbm.xml</list>
+     <list>Trade.hbm.xml</list>
+     <list>Account.hbm.xml</list>
+   </mapping>
+  </session-factory>
+ </hibernate-configuration>
+----
+==== Programmatic Configuration and Mapping
+Hibernate will allow us associate the mapping files programmatically too. 
+
+[source,java]
+----
+TODO:
+Configuration cfg = new Configuration()
+	cfg.addFile("Movie.hbm.xml");
+	cfg.addFile("Trade.hbm.xml");
+----
+
+Alternatively, we can add the persistent classes so Hibernate will search and load the respective mappings based on the class types:
+[source,java]
+----
+TODO:
+Configuration cfg = new Configuration()
+	cfg.addFile("Movie.hbm.xml");
+	cfg.addFile("Trade.hbm.xml");
+----
+
+
+Now that the mapping bits are covered, the next step is to go ahead and check how Hibenrate starts up and how we can use it's simple API to access the data.
+
+
+[TODO]
+
+==== Annotations
+We don't have to stick with mapping definitions in a xml file. We can use Annotations to decalare the meta data and let Hibernate know that mapping  definitions annotated.
+
+[TODO]
+
+=== Putting it all Together

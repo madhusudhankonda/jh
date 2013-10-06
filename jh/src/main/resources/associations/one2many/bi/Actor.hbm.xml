@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.madhusudhan.jh.associations.one2many.bi">
+  <class name="Actor" table="ACTOR_ONE2MANY_BI">
+    <id  name="id" column="ACTOR_ID">
+      <generator class="assigned"/>
+    </id>
+    <many-to-one name="movie" column="MOVIE_ID" class="Movie"/>
+        
+    <property name="firstName" column="FIRST_NAME" />
+    <property name="lastName" column="LAST_NAME"/>
+    <property name="shortName" column="SHORT_NAME"/>
+  </class>
+</hibernate-mapping>

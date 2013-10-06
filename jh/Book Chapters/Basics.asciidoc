@@ -1,0 +1,341 @@
+=== Introduction
+
+There are two different software worlds: one is the Java world where none other than Objects are known while the other is a Relational Database world where data is king! The data is traditionally represented as row-column format with relationships and associations. Bringing these two worlds together is always a challenging task for Java developers.
+
+Enterprises employ Object oriented technologies (programming languages such as Java, C#, C++ etc) as their programming platforms along with Relational Databases (such as Oracle, MySql, Sybase etc) for data storage. They co-existence of these two software technologies is a must for most of the real world applications inspite of the so called object-relational impedance mistmatch. The differences are mitigated by employing various homegrown frameworks and various other technical solutions and strategies.
+
+Persisting data from a Java application to any relational database always poses numerous challenges to developers. We have JDBC API to some extent supporting such persistence but it requires lot of manual coding. 
+
+The long awaited Object to Relational Data mapping tool came into reality by the advent of Hibernate! Hibernate has become an instant hit overnight and is undeniably the most popular open source in Object-Relational-Mapping (ORM) tools domain. The framework was embraced by the community for its simplicity and powerful features.
+
+In this chapter, we start looking at the problem domain what Hibernate is trying to solve. We also look at the implementation using JDBC and how it fails short in proving to be a framework. We may not delve into details yet as we explore them in coming chapters.
+
+=== Problem Domain
+
+Before we jump in to understanding the Hibernate in detail, let us find out the problem domain what Hibernate is trying to solve with an example.
+
+Let's say our requirement was to create a simple Java application that would store and retrieve movies from a permanent storage (database).
+
+Consider a Java application called +VanillaMovieManager+ - that persists, updates and finds Movies from a database. 
+
+The MOVIES table will have all the movies as rows in the table. If you translate each of these rows, each row should be represented as a Java Object in our +VanillaMovieManager+ application.
+
+Lets write some sample code using JDBC that would deal with these requirements. We pick JDBC as the chosen technology for creating this movie application as this would make us understand Hibernate's intentions in detail.
+
+Before we worry about the actual work of saving and querying a Movie, we need to creae a class +VanillaMovieManager+ that would fulfil our requirments. Note that we are going to use JDBC for accessing the database.  
+
+The first step in any databse application is to establish a connection with database. The +createConnection+ method has this capability of creating a Connection, shown in the following snippet:
+[source, java]
+----
+public class VanillaMovieManager {
+    private Connection connection = null;
+    private String url = "jdbc:derby:memory:JH;create=true";
+	private String driverClass = "org.apache.derby.jdbc.EmbeddedDriver";
+    ....
+    private void createConnection() {
+        try {
+			Class.forName(driverClass).newInstance();
+			connection = DriverManager.getConnection(url, "", "");
+		} catch (Exception ex) {
+			System.err.println("Exception while creating a connection:"
+					+ ex.getMessage());
+		}
+    }
+}
+----
+Once we have established our connection to the databse successfully, next step is to write a method to persist and query a Movie. Most parts of the methods should be familiar to you if you have had a bit of expereience with JDBC code.
+
+See below snippet for +persistMovie+ method implementation:
+[source, java]
+----
+public class VanillaMovieManager {
+    private String insertSql = "INSERT INTO MOVIES VALUES (?,?,?,?)";
+    private String selectSql = "SELECT * FROM MOVIES";
+    ...
+
+    private void persistMovie() {
+    	try {
+			PreparedStatement pst = getConnection().prepareStatement(insertSql);
+			pst.setInt(1, 1001);
+			pst.setString(2, "Top Gun");
+			pst.setString(3, "Action Film");
+			pst.setString(4, "Tony Scott");
+			
+			pst.execute();
+			System.out.println("Movie persisted successfully!");
+			
+			//Now querying the persisted movie
+			// which can be done in another method.
+			System.out.println("Querying the movie..");
+			Statement st = getConnection().createStatement();
+			ResultSet rs = st.executeQuery(selectSql);
+			while (rs.next()) {
+				System.out
+						.println("Movie Found: " + rs.getInt("ID") + ", 
+                                Title:" + rs.getString("TITLE"));
+			}
+
+		} catch (SQLException ex) {
+			System.err.println(ex.getMessage());
+			ex.printStackTrace();
+		}
+	}
+}
+----
+What we are doing here, is:
+
+* Creating a +PreparedStatement+ from the connection with insert sql string
+* Setting the statement with values (column values against column numbers -1 is Id, 2 is title etc)
+* Executing the statement which should insert the movie in the table
+* Query the datbase for all Movies and print them out to the console
+
+The steps are pretty much self explanatory. We create a +PreparedStatment+ and execute it after setting the appropriate values on it for each column. Once we know the execute worked, query the database with a select statement to fetch all the movies available printing them to the console.
+
+However, there are few things to note: 
+
+* We use a pre-definied SQL statment to insert (or select) column values
+* The column values are set one-by-one using the position number (or column name)
+* We catch the SQLException should the code mis-behave
+
+For simple programs, this type of creating the statements with the values and executing is fine. Unfortunately, we have to deal with a lot of non-business code when using JDBC. Also, using JDBC might pose a challenge when you have lot number tables or complex relationships.  
+
+It would be ideal to call a method such as +MovieUtil.persist(Movie m)+ on a util class so that the +Movie+ object is persisted straight away? After all, we are Object Oriented Programmers, wishing for this facility is not a sin!
+
+==== Improvising the Movie Application
+
+Let's see what we can do to improvise the above Movie application.
+
+We will create a Movie as a Plain Old Java Object (POJO) representing a Movie itself. For every celluloid Movie that's released (or yet to be released), we'll have a new Movie object created. See the definition of Movie POJO here:
+
+[source, java]
+----
+public class Movie {
+    private int id = 0;
+	private String  title = null;
+	private String  synopsis = null;
+	private String  director = null;
+    ...
+    //setters and getters ommitted
+}
+----
+So, all we wish is for a faciltiy to persist this POJO Object into our database - this is what we call Object model to Relational Model. So, we create a +MoviePersistor+ class that might do this job:
+
+[source, java]
+----
+//Pseudo Code
+public class MoviePersistor {
+    public void perist(Movie movie) {
+		// persisting mechanism goes here..
+	}
+	public void fetch(String title) {
+		// fetching a movie by title mechanism goes here..
+	}
+    ...
+}
+----
+We haven't written the persist or fetch functionality yet. Now, it is quite easy to persit any Movie using our +MoviePersistor+ utility class as shown in the sample test here:
+
+[source, java]
+----
+    //Pseudo Code
+    MoviePersistor moviePersistor = new MoviePersistor();
+    Movie movie = new Movie();
+
+    movie.setId(1);
+	movie.setTitle("Jaws");
+	movie.setDirector("Steven Spielberg");
+	movie.setSynopsis("Story of a great white shark!");
+
+	moviePersistor.perist(movie);
+----
+
+How cool is that : a POJO representing a celluloid movie is persisted as a row of record into a database table - object model to relational model!
+
+That's all good, except the actual +perist+ and +fetch+ method implementations. In order to implement this functionality, we not only need the connection mechanism to a Databse, we also need a mechanism to convert the object to row such as mapping our object properties to database columns. 
+
+We can write our own frameowork of classes to hide the nitti-gritties of these conversions and persistence mechanisms (may be using good old JDBC statements behind the scenes). 
+
+Well, before you go away to start writing this code, let me be the messaiah of the good news (if you haven't already have heard this) - there's already a great framework that does exactly (infact, tons more) what we are thinking of doing - Object persistence to a relational database - called Hibernate!
+
+Hibernate is _the_ most popular open-source framework for Java Object persistence to any relational databases by providing facilities such as Object-to-relational mappings and top-of-the world persistice mechanisms. It not only changed the  Java persistence world, but certainly paved a way for further standards in the Object/Relational software arena. It is standing tall as a de-facto leader in ORM tools space!
+
+Now that we've concluded that Hibernate is the choice of our persistence framework, let's first get to know a bit more obout the framework and see the the full code of the above +MovieManager+ application using the framework.
+
+=== Using Hibernate 
+
+Before we jump into the full details of Hibernate, I suggest we understand the Hibernate framework with help of an example. We'll re-engineer the above +Movie+ application using Hibernate. This will give us an idea of the framework from a high ground.
+
+So, the common steps involved in developing a Java-Hibernate application are:
+
+* Create a Movie domain object (domain model POJOs representing data tables)
+* Create configuration files such as Hibernate properties and Mapping files. 
+* Create a Test client that manages (insert/update/delete/find) the Movies
+
+We have already prepared a Movie POJO as shown in prior snippets, so we don't have to go over it again.
+
+The heart of any Hibernate application is it's configuration!
+
+There are two pieces of configurations required in any application - one to create the Database connections and other to create the Object-to-Table mapping. We are not going to go in detail about them in detail in this chapter. The aim of this chapter is to get you started easily!
+
+=== Hibernate Properties
+
+In order to create a connection to the database, Hibernate should know the details of our database, tables, classes and other mechanics. This information is ideally provided in a simple text file with name-value pairs or as a xml file. For this excercise, we use Xml style. We name this file as +hibernate.cfg.xml+ so framework can load this file automatically. We need to explicitly mention the name of the config file if it's named anything other than +hibernate.cfg.xml+ file.
+
+The following snippet describes the such configuration file . The connection details for an in-memory database JavaDB (otherwise called Derby) are declared in this xml file:
+
+[source, xml]
+----
+<?xml version="1.0" encoding="utf-8"?> 
+<!DOCTYPE hibernate-configuration SYSTEM "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+		<property name="connection.url">jdbc:derby:memory:JH;create=true</property>
+		<property name="connection.driver_class">org.apache.derby.jdbc.EmbeddedDriver</property>
+		<property name="dialect">org.hibernate.dialect.DerbyDialect</property>
+		*<mapping resource="Movie.hbm.xml" />*
+	</session-factory>
+</hibernate-configuration>
+----
+
+The above file has enough information to get a live connection to a Database. All the properties are prefixed with hibenate and follows a pattern - +hibernate.* properties+ for instance. 
+The +connection.url+ indicates the URL to which we should be connected, the driver_class represents the relevant Driver class to make a connection, the dialect indicates the which Database (Derby in the above case) dialect we are using, etc. 
+The last highlighted +mapping+ property indicates the name of the mapping resource that Hibernate should load. In this case, the +Movie.hbm.xml+ is the mapping file that consists of details of how a +Movie+ object is mapped to a +MOVIE+ table. 
+
+Note that we are going to use an in-memory database called JavaDB (Derby) through out this book.
+
+What does Hibernate do with this properties file? Lots of things, to be honest! Well, this file is loaded by Hiberante framework to create a +SessionFactory+ - a thread-safe global factory class for creating +Session+s. +Session+ is a gateway to our database. It is the +Session+'s job to take care of all database operations from our applicaition code. The framework also maintains a transactional medium around our application. We'll see the details of how it's being used through out the book. For now, make a mental note that the above configuration is used to create a +Session+ via a +SessionFactory+ instance.
+
+Once we have the connection configuration ready, the next step is to prepare the +Movie.hbm.xml+ mapping file. The following xml snippet defines such mapping file:
+
+[source, xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+    <class name="com.madhusudhan.jh.domain.Movie" table="MOVIES">
+		<id name="id" column="ID">
+			<generator class="assigned"/>
+		</id>
+		<property name="title" column="TITLE"/>
+		<property name="director" column="DIRECTOR"/>
+		<property name="synopsis" column="SYNOPSIS"/>
+	</class>
+</hibernate-mapping>
+----
+The relevant mapping details are encoded in +hibernate-mapping+ tag pointing to our POJO class +com.madhusudhan.jh.domain.Movie+ class which is mapped against a table +MOVIES+.
+
+The rest of the properties indicates the mapping between the Object's variables to the table's columns. For example, the +id+ is mapped to +ID+, the +title+ to +TITLE+, +director+ to +DIRECTOR+ and so on. The +id+ tag indicates the way the +Movie+ object will be set an identifier on it. We will discuss the various strategies of setting an +id+ in the next chapter.
+
+Now that the configuration is our of our way, let's create a client that persists the objects with the help of Hibernate. 
+
+The following snippet shows the initial setup of the creating the SessionFactory class:
+[source, java]
+----
+public class BasicMovieManager {
+    private SessionFactory sessionFactory = null;
+    
+    public BasicMovieManager() {
+		init3x();
+	}
+	
+    //Creating SessionFactory using 4.x version of Hibernate
+    private void init4x(){
+		Configuration config = new Configuration().configure();
+
+		ServiceRegistry serviceRegistry = new ServiceRegistryBuilder().applySettings(
+				config.getProperties()).buildServiceRegistry();
+
+		sessionFactory = config.buildSessionFactory(serviceRegistry);
+
+	}
+    ...
+}
+----
+
+
+For convenience, the +BasicMovieManager+ class has an init method that creates +SessionFactory+ using latest 4.x version. You should use the following code snippet should you wish to use the pre-4.x (perhaps 3.0) version:
+
+[source, java]
+----
+public class BasicMovieManager {
+    //Creating SessionFactory using 3.x version of Hibernate
+    private void init3x(){
+		sessionFactory = new Configuration().configure().buildSessionFactory();
+	}
+	...
+}
+----
+In this book, we use the latest and greatest of Hibernte - 4.2 version at the time of writing.
+
+In 3.x versions, the +configure()+ method rummages through the classpath looking for a file named +hibernate.cfg.xml+ (or +hibernate.properties+) to create a +Configuration+ object. This configuration object is then used to create a +SessionFactory+ instance.
+
+In 4.x version, this is slightly modified by introducing +ServiceRegistry+ which takes a +Map+ of properties which can be fed from a +Configuration+ object as shown above. 
+
+What ever the version you choose, the +SessionFactory+ thus created is the same and so are the +Session+s.
+
+Now, to the actual workings of the class. The persist method is defined on the +BasicMovieManager+ class that would persist a movie using +Session+'s +save+ method. This is shown in the following snippet:
+
+[source, java]
+----
+public class BasicMovieManager {
+    private void persistMovie(Movie movie) {
+		Session session = sessionFactory.getCurrentSession();
+		session.beginTransaction();
+		*session.save(movie);*
+		session.getTransaction().commit();
+	}
+    ...
+}
+----
+
+It looks simple, isn't it? First thing what we do is to grab a +Session+ from the factory. We then start a transaction (we'll learn more about the Transactions in the coming chapters), persist the incoming movie object using +session.save+ method. Finally we commit the trasaction at which point the Movie is stored permanently in your database. 
+
+Run the client by invoking the +findMovie+ method to fetch the same movie:
+[source, java]
+----
+public class BasicMovieManager {
+    ...
+    private void findMovie(int i) {
+    	Session session = sessionFactory.getCurrentSession();
+		session.beginTransaction();
+		*Movie movie = (Movie)session.load(Movie.class, i);*
+		System.out.println("Movie:"+movie);
+		session.getTransaction().commit();
+		
+	}
+}
+----
+
+The output prints the +Movie+'s toString method.
+
+The +load()+ method on the +Session+ API fetches the appropriate +Movie+ object for a given identifier. If you are thinking that Hibernate may use a +SELECT+ statement behind the scenes, you are correct! We'll learn about the details in coming chapters. 
+
+Should you wish to fetch all movies from the table, you create a +Query+ with simple query string +"from Movie"+ and execute it. The +list+ method on the Query (created via session.createQuery) returns a +List+ of movies. This is shown below:
+
+[source, java]
+----
+public class BasicMovieManager {
+    ...
+    private void findAll() {
+    	Session session = sessionFactory.getCurrentSession();
+		session.beginTransaction();
+		*List<Movie> movies = session.createQuery("from Movie").list();*
+		session.getTransaction().commit();
+        System.out.println("All Movies:"+movies);
+	}
+    ...
+}
+----
+
+That's pretty much it! 
+
+We wished for a mechanism that hides the nitti-gritties of clumsy JDBC statements and connections. We dreamt of creating facility methods that would store a POJO object directly to the database without the hassle of setting/getting the columns. Our dreams and wishes have come true!
+
+You may have lots of questions, they'll be demystified as we go through the journey!
+
+=== Summary
+In this chapter, we tried to understand the problem domain walking through an example. Although we can use JDBC for the data access, we found that a lot of manual mappings was coded and and repetetive code put in place unnessasarily. We took a small step and introduced Hibernate to solve the problem of Object-to-Relational data persistence. From a high ground, we tried to understand the Hibernate concepts around +SessionFactory+ and +Session+s. We refactored the JDBC example to use Hiberante framework and successfully persited and queried the POJOs as expected. 
+
+In the next chapter, we'll run through the fundamentals of Hibernate in detail.

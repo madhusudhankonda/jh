@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.madhusudhan.jh.advanced.inheritance.s3">
+  <class name="Person" abstract="true">
+    <id  name="id" column="EMPLOYEE_ID">
+      <generator class="assigned"/>
+    </id>
+    <property name="name" column="NAME" />
+    <union-subclass name="Employee" table="INHERITANCE_S3_EMPLOYEE_X">
+       <property name="role" column="ROLE"/>
+    </union-subclass>
+    
+    <union-subclass name="Executive" table="INHERITANCE_S3_EXECUTIVE_X">
+       <property name="bonus" column="BONUS"/>
+    </union-subclass>
+    
+  </class>
+</hibernate-mapping>

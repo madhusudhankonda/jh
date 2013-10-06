@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.madhusudhan.jh.associations.one2one">
+    <class name="Engine" table="ENGINE">
+    <id column="CAR_ID" name="id">
+      <generator class="foreign">
+        <param name="property">car</param>
+      </generator>
+    </id>
+    <one-to-one class="Car" constrained="true" name="car"/>
+    <property column="SIZE" name="size"/>
+    <property column="MAKE" name="make"/>
+    <property column="MODEL" name="model"/>
+  </class>
+</hibernate-mapping>

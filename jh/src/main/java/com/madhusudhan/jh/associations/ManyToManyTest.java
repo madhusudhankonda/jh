@@ -8,8 +8,10 @@ import com.madhusudhan.jh.associations.many2many.Course;
 import com.madhusudhan.jh.associations.many2many.Student;
 import java.util.HashSet;
 import java.util.Set;
+import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.ServiceRegistryBuilder;
@@ -30,28 +32,37 @@ public class ManyToManyTest {
 
     private void persist() {
         Session session = factory.getCurrentSession();
-        session.beginTransaction();
-
-        Course course = createCoursesAndStudents();
-        session.save(course);
-
-        session.getTransaction().commit();
+        
+        Transaction tx = null;
+        
+        try {
+            tx = session.beginTransaction();
+            Course course = createCoursesAndStudents();
+            session.save(course);
+            tx.commit();
+        } catch (HibernateException he) {
+            if(tx!=null)
+                tx.rollback();
+            throw he;
+        }finally{
+            session.close();
+        }
         System.out.println("Done");
     }
 
     private Course createCoursesAndStudents() {
         Set<Student> students = new HashSet<Student>();
         Course course = null;
-        
+
         Student studentA = new Student("Mike Meyer");
-        
+
         Student studentB = new Student("M Kay");
         students.add(studentA);
         students.add(studentB);
-        
+
         course = new Course("Art of Living");
         course.setStudents(students);
-        
+
         return course;
     }
 

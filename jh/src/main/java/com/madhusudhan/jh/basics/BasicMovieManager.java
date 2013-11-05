@@ -9,7 +9,6 @@ import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.ServiceRegistryBuilder;
 
 import com.madhusudhan.jh.domain.Movie;
-import org.hibernate.metamodel.MetadataSources;
 
 public class BasicMovieManager {
 
@@ -82,10 +81,10 @@ public class BasicMovieManager {
     public static void main(String[] args) {
         BasicMovieManager movieManager = new BasicMovieManager();
 
-        movieManager.persistMovie();
+//        movieManager.persistMovie();
 
         movieManager.findMovie(1);
 
-        movieManager.findAll();
+//        movieManager.findAll();
     }
 }

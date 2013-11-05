@@ -11,8 +11,5 @@
         <property name="current_session_context_class">thread</property>
         <property name="hbm2ddl.auto">update</property>
         <property name="hibernate.show_sql">true</property>
-        <!--
-        <mapping class="com.madhusudhan.jh.annotations.Employee"/>
-        -->
     </session-factory>
 </hibernate-configuration>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.madhusudhan.jh.collections.idbags">
+  <class name="Showroom" table="SHOWROOM_IDBAGS">
+    <id column="SHOWROOM_ID" name="id">
+      <generator class="native"/>
+    </id>
+    <property column="MANAGER" name="manager"/>
+    <property column="LOCATION" name="location"/>
+    <idbag name="cars" cascade="all" table="CARS_IDBAGS">
+        <collection-id  column="CAR_IDBAG" type="string">
+            <generator class="identity"/>
+        </collection-id>
+        <key column="SHOWROOM_ID"/>
+        <element type="string" column="CARNAME" not-null="true"/>
+    </idbag>
+  </class>
+  <!--
+  <class name="Car" table="CARS_IDBAGS">
+    <id column="CAR_ID" name="id">
+      <generator class="native"/>
+    </id>
+    <property column="NAME" name="name"/>
+    <property column="COLOR" name="color"/>
+  </class>
+  -->
+</hibernate-mapping>

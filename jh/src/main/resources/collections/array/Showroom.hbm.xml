@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.madhusudhan.jh.collections.array">
+  <class name="Showroom" table="SHOWROOM_ARRAY">
+    <id column="SHOWROOM_ID" name="id">
+      <generator class="native"/>
+    </id>
+    <property column="MANAGER" name="manager"/>
+    <property column="LOCATION" name="location"/>
+    <array name="cars" cascade="all" table="CARS_ARRAY">
+      <key column="SHOWROOM_ID"/>
+      <index column="CAR_INDEX" type="string"/>
+      <element column="CAR_NAME" type="string" not-null="true"/>
+    </array>
+  </class>
+</hibernate-mapping>
